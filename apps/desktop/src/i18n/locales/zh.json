@@ -72,6 +72,10 @@
   "hotkey.recording.globalHotkey": "全局快捷键",
   "hotkey.recording.pressKeys": "请按键...",
   "hotkey.recording.hint": "点击输入框，然后按下您想要的组合键",
+  "hotkey.recording.modeTitle": "录音模式",
+  "hotkey.recording.modeHold": "按住",
+  "hotkey.recording.modeToggle": "切换",
+  "hotkey.recording.modeDesc": "按住：按住快捷键录音，松开结束。切换：按一下开始，再按一下结束。",
   "model.title": "模型设置",
   "model.description": "配置语音识别",
   "model.active.title": "当前模型",
@@ -249,5 +253,8 @@
   "onboarding.practice.title": "试一试",
   "onboarding.practice.description": "测试录音功能",
   "onboarding.done.title": "设置完成",
-  "onboarding.done.description": "AriaType 已准备就绪"
+  "onboarding.done.description": "AriaType 已准备就绪",
+  "model.tabs.voice": "语音输入",
+  "model.tabs.polish": "文本润色",
+  "model.tabs.performance": "性能"
 }

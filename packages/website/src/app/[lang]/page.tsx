@@ -744,7 +744,7 @@ export default function HomePage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: i * 0.1 }}
-                className="p-6 rounded-xl bg-card border border-border hover:border-foreground/20 transition-all text-center"
+                className="p-8 rounded-xl bg-card border border-border hover:border-foreground/20 transition-all text-center"
               >
                 <div className="flex flex-col items-center mb-4">
                   <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center mb-4">
@@ -935,12 +935,12 @@ export default function HomePage() {
                           label: "github",
                         })
                       }
-                      className="flex items-center gap-4 p-6 rounded-xl bg-card border border-border hover:border-foreground/20 transition-all"
+                      className="flex items-center gap-4 p-8 rounded-xl bg-card border border-border hover:border-foreground/20 transition-all"
                     >
                       {content}
                     </Link>
                   ) : (
-                    <div className="flex items-center gap-4 p-6 rounded-xl bg-card border border-border hover:border-foreground/20 transition-all">
+                    <div className="flex items-center gap-4 p-8 rounded-xl bg-card border border-border hover:border-foreground/20 transition-all">
                       {content}
                     </div>
                   )}
@@ -1057,7 +1057,7 @@ export default function HomePage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: index * 0.1 }}
-                className="flex items-start gap-6 p-6 rounded-xl bg-card border border-border"
+                className="flex items-start gap-6 p-8 rounded-xl bg-card border border-border"
               >
                 <div className="w-12 h-12 rounded-full bg-foreground flex items-center justify-center font-bold text-xl text-background shrink-0">
                   {index + 1}

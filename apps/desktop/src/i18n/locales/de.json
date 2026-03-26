@@ -72,6 +72,10 @@
   "hotkey.recording.globalHotkey": "Globales Tastenkürzel",
   "hotkey.recording.pressKeys": "Tasten drücken...",
   "hotkey.recording.hint": "Klicken Sie auf das Feld und drücken Sie Ihre Tastenkombination",
+  "hotkey.recording.modeTitle": "Aufnahmemodus",
+  "hotkey.recording.modeHold": "Halten",
+  "hotkey.recording.modeToggle": "Umschalten",
+  "hotkey.recording.modeDesc": "Halten: Drücken und halten Sie zum Aufnehmen, loslassen zum Stoppen. Umschalten: Drücken zum Starten, nochmal drücken zum Stoppen.",
   "model.title": "Modell-Einstellungen",
   "model.description": "Spracherkennung konfigurieren",
   "model.active.title": "Aktives Modell",
@@ -249,5 +253,8 @@
   "onboarding.practice.title": "Ausprobieren",
   "onboarding.practice.description": "Testen Sie die Aufnahmefunktion",
   "onboarding.done.title": "Fertig",
-  "onboarding.done.description": "AriaType ist bereit"
+  "onboarding.done.description": "AriaType ist bereit",
+  "model.tabs.voice": "Spracheingabe",
+  "model.tabs.polish": "Textpolitur",
+  "model.tabs.performance": "Leistung"
 }

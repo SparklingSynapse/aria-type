@@ -4,7 +4,7 @@ use std::path::PathBuf;
 use std::str::FromStr;
 use std::sync::atomic::Ordering;
 use tauri::{AppHandle, Emitter, Manager, State};
-use tauri_plugin_global_shortcut::{Code, GlobalShortcutExt, Modifiers, Shortcut};
+use tauri_plugin_global_shortcut::{Code, GlobalShortcutExt, Modifiers, Shortcut, ShortcutState};
 use tracing::info;
 
 use crate::commands::window::position_pill_window;
@@ -34,6 +34,7 @@ pub struct CloudProviderConfig {
 #[serde(default)]
 pub struct AppSettings {
     pub hotkey: String,
+    pub recording_mode: String,
     pub model: String,
     pub stt_engine: String,
     pub pill_position: String,
@@ -71,6 +72,7 @@ impl Default for AppSettings {
     fn default() -> Self {
         Self {
             hotkey: "shift+space".to_string(),
+            recording_mode: "hold".to_string(),
             model: "base".to_string(),
             stt_engine: "whisper".to_string(),
             pill_position: "bottom-center".to_string(),
@@ -152,6 +154,11 @@ pub fn update_settings(
                 if let Some(v) = value.as_str() {
                     settings.hotkey = v.to_string();
                     hotkey_to_register = Some(v.to_string());
+                }
+            }
+            "recording_mode" => {
+                if let Some(v) = value.as_str() {
+                    settings.recording_mode = v.to_string();
                 }
             }
             "model" => {
@@ -289,16 +296,14 @@ pub fn update_settings(
                     settings.analytics_opt_in = v;
                 }
             }
-            "cloud_polish" => {
-                match serde_json::from_value::<CloudProviderConfig>(value.clone()) {
-                    Ok(v) => {
-                        settings.cloud_polish = v;
-                    }
-                    Err(e) => {
-                        tracing::error!(error = %e, value = %value, "failed to parse cloud_polish config");
-                    }
+            "cloud_polish" => match serde_json::from_value::<CloudProviderConfig>(value.clone()) {
+                Ok(v) => {
+                    settings.cloud_polish = v;
                 }
-            }
+                Err(e) => {
+                    tracing::error!(error = %e, value = %value, "failed to parse cloud_polish config");
+                }
+            },
             _ => return Err(format!("Unknown setting key: {}", key)),
         }
 
@@ -441,7 +446,7 @@ pub fn register_global_shortcut(app: &AppHandle, hotkey: &str) -> Result<(), Str
 
     let shortcut = Shortcut::new(modifiers, code);
     app.global_shortcut()
-        .on_shortcut(shortcut, |app, _shortcut, _event| {
+        .on_shortcut(shortcut, |app, _shortcut, event| {
             tracing::debug!("global shortcut triggered");
 
             let state_result = app.try_state::<AppState>();
@@ -453,16 +458,47 @@ pub fn register_global_shortcut(app: &AppHandle, hotkey: &str) -> Result<(), Str
                     }
 
                     let is_recording = state.is_recording.load(Ordering::SeqCst);
+                    let recording_mode = state.settings.lock().recording_mode.clone();
 
-                    if is_recording {
-                        match crate::commands::audio::stop_recording_sync(app.clone()) {
-                            Ok(_) => {}
-                            Err(e) => tracing::error!(error = %e, "failed to stop recording"),
+                    match recording_mode.as_str() {
+                        "hold" => {
+                            // Hold mode: Press to start, Release to stop
+                            if event.state == ShortcutState::Pressed && !is_recording {
+                                match crate::commands::audio::start_recording_sync(app.clone()) {
+                                    Ok(_) => {}
+                                    Err(e) => {
+                                        tracing::error!(error = %e, "failed to start recording")
+                                    }
+                                }
+                            } else if event.state == ShortcutState::Released && is_recording {
+                                match crate::commands::audio::stop_recording_sync(app.clone()) {
+                                    Ok(_) => {}
+                                    Err(e) => {
+                                        tracing::error!(error = %e, "failed to stop recording")
+                                    }
+                                }
+                            }
                         }
-                    } else {
-                        match crate::commands::audio::start_recording_sync(app.clone()) {
-                            Ok(_) => {}
-                            Err(e) => tracing::error!(error = %e, "failed to start recording"),
+                        _ => {
+                            // Toggle mode (default): Press to toggle
+                            if event.state == ShortcutState::Pressed {
+                                if is_recording {
+                                    match crate::commands::audio::stop_recording_sync(app.clone()) {
+                                        Ok(_) => {}
+                                        Err(e) => {
+                                            tracing::error!(error = %e, "failed to stop recording")
+                                        }
+                                    }
+                                } else {
+                                    match crate::commands::audio::start_recording_sync(app.clone())
+                                    {
+                                        Ok(_) => {}
+                                        Err(e) => {
+                                            tracing::error!(error = %e, "failed to start recording")
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
                 }

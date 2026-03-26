@@ -14,6 +14,8 @@ import { VoiceInputSection } from "./model/VoiceInputSection";
 import { PolishSection } from "./model/PolishSection";
 import { PerformanceSection } from "./model/PerformanceSection";
 
+import { cn } from "@/lib/utils";
+
 export function ModelSettings() {
   const { t } = useTranslation();
   const { settings } = useSettingsContext();
@@ -255,40 +257,43 @@ export function ModelSettings() {
       title={t("model.title")}
       description={t("model.description")}
     >
-      <div className="flex space-x-1 bg-secondary/50 p-1 rounded-lg w-fit mb-6">
+      <div className="inline-flex h-10 items-center justify-center rounded-lg bg-secondary p-1 text-muted-foreground ">
         <button
           onClick={() => setActiveTab("voice")}
-          className={`px-4 py-2 text-sm font-medium rounded-md transition-all ${
+          className={cn(
+            "inline-flex items-center justify-center whitespace-nowrap rounded-md px-4 py-1.5 text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
             activeTab === "voice"
-              ? "bg-background shadow-sm text-foreground"
-              : "text-muted-foreground hover:text-foreground"
-          }`}
+              ? "bg-background text-foreground shadow-sm"
+              : "hover:text-foreground"
+          )}
         >
           {t("model.tabs.voice", "Voice Input")}
         </button>
         <button
           onClick={() => setActiveTab("polish")}
-          className={`px-4 py-2 text-sm font-medium rounded-md transition-all ${
+          className={cn(
+            "inline-flex items-center justify-center whitespace-nowrap rounded-md px-4 py-1.5 text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
             activeTab === "polish"
-              ? "bg-background shadow-sm text-foreground"
-              : "text-muted-foreground hover:text-foreground"
-          }`}
+              ? "bg-background text-foreground shadow-sm"
+              : "hover:text-foreground"
+          )}
         >
           {t("model.tabs.polish", "Polish")}
         </button>
         <button
           onClick={() => setActiveTab("performance")}
-          className={`px-4 py-2 text-sm font-medium rounded-md transition-all ${
+          className={cn(
+            "inline-flex items-center justify-center whitespace-nowrap rounded-md px-4 py-1.5 text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
             activeTab === "performance"
-              ? "bg-background shadow-sm text-foreground"
-              : "text-muted-foreground hover:text-foreground"
-          }`}
+              ? "bg-background text-foreground shadow-sm"
+              : "hover:text-foreground"
+          )}
         >
           {t("model.tabs.performance", "Performance")}
         </button>
       </div>
 
-      <div className="mt-4">
+      <div >
         {activeTab === "voice" && (
           <VoiceInputSection
             models={models}

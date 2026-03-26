@@ -97,7 +97,7 @@ export function LogViewer() {
         options={{
           scrollbars: {
             theme: "os-theme-dark",
-            autoHide: "leave",
+            autoHide: "scroll",
             autoHideDelay: 300,
           },
         }}

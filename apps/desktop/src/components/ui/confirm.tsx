@@ -82,7 +82,7 @@ export function ConfirmProvider({ children }: { children: React.ReactNode }) {
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.95 }}
                     transition={{ duration: 0.15 }}
-                    className="bg-card border border-border rounded-xl p-6 max-w-sm w-[calc(100%-2rem)] shadow-lg pointer-events-auto"
+                    className="bg-card border border-border rounded-xl p-8 max-w-sm w-[calc(100%-2rem)] shadow-lg pointer-events-auto"
                   >
                     <Dialog.Title className="text-lg font-semibold mb-2">
                       {state.title}

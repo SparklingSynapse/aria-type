@@ -249,5 +249,12 @@
   "onboarding.practice.title": "사용해보기",
   "onboarding.practice.description": "녹음 기능을 테스트하세요",
   "onboarding.done.title": "설정 완료",
-  "onboarding.done.description": "AriaType이 준비되었습니다"
+  "onboarding.done.description": "AriaType이 준비되었습니다",
+  "hotkey.recording.modeTitle": "녹음 모드",
+  "hotkey.recording.modeHold": "누르고 있기",
+  "hotkey.recording.modeToggle": "토글",
+  "hotkey.recording.modeDesc": "누르고 있기: 누르고 있으면 녹음, 놓으면 정지. 토글: 한 번 누르면 시작, 다시 누르면 정지.",
+  "model.tabs.voice": "음성 입력",
+  "model.tabs.polish": "텍스트 다듬기",
+  "model.tabs.performance": "성능"
 }

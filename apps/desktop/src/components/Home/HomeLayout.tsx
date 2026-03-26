@@ -3,7 +3,7 @@ import {
   Settings,
   Keyboard,
   Brain,
-  Cloud,
+  CloudCog,
   Info,
   Shield,
   MessageSquare,
@@ -43,7 +43,7 @@ export function HomeLayout() {
     { to: "/", icon: Settings, label: t("nav.general") },
     { to: "/hotkey", icon: Keyboard, label: t("nav.hotkey") },
     { to: "/private-ai", icon: Brain, label: t("nav.privateAi"), badge: !hasModel },
-    { to: "/cloud", icon: Cloud, label: t("cloud.title") },
+    { to: "/cloud", icon: CloudCog, label: t("cloud.title") },
     { to: "/permission", icon: Shield, label: t("nav.permission"), badge: badges.permission },
     { to: "/about", icon: Info, label: t("nav.about"), badge: badges.about },
     { type: "external" as const, icon: MessageSquare, label: t("nav.feedback"), href: FEEDBACK_URL },
@@ -149,7 +149,7 @@ export function HomeLayout() {
             options={{
               scrollbars: {
                 theme: "os-theme-dark",
-                autoHide: "leave",
+                autoHide: "scroll",
                 autoHideDelay: 300,
               },
             }}

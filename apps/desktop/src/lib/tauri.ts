@@ -34,6 +34,7 @@ export interface CloudProviderConfig {
 
 export interface AppSettings {
   hotkey: string;
+  recording_mode: "hold" | "toggle";
   model: string;
   stt_engine: string;
   pill_position: string;

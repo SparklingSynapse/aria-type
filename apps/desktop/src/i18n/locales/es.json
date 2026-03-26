@@ -72,6 +72,10 @@
   "hotkey.recording.globalHotkey": "Atajo global",
   "hotkey.recording.pressKeys": "Presione teclas...",
   "hotkey.recording.hint": "Haga clic en el campo y presione su combinación",
+  "hotkey.recording.modeTitle": "Modo de grabación",
+  "hotkey.recording.modeHold": "Mantener",
+  "hotkey.recording.modeToggle": "Alternar",
+  "hotkey.recording.modeDesc": "Mantener: presione y mantenga para grabar, suelte para detener. Alternar: presione para iniciar, presione de nuevo para detener.",
   "model.title": "Configuración de modelo",
   "model.description": "Configurar reconocimiento de voz",
   "model.active.title": "Modelo activo",
@@ -249,5 +253,8 @@
   "onboarding.practice.title": "Pruebe",
   "onboarding.practice.description": "Pruebe la función de grabación",
   "onboarding.done.title": "Listo",
-  "onboarding.done.description": "AriaType está listo"
+  "onboarding.done.description": "AriaType está listo",
+  "model.tabs.voice": "Entrada de voz",
+  "model.tabs.polish": "Pulido",
+  "model.tabs.performance": "Rendimiento"
 }

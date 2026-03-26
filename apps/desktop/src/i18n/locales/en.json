@@ -72,6 +72,10 @@
   "hotkey.recording.globalHotkey": "Global Hotkey",
   "hotkey.recording.pressKeys": "Press keys...",
   "hotkey.recording.hint": "Click the input field and press your desired key combination",
+  "hotkey.recording.modeTitle": "Recording Mode",
+  "hotkey.recording.modeHold": "Hold",
+  "hotkey.recording.modeToggle": "Toggle",
+  "hotkey.recording.modeDesc": "Hold: press and hold to record, release to stop. Toggle: press to start, press again to stop.",
   "model.title": "Model Settings",
   "model.description": "Configure speech recognition",
   "model.active.title": "Active Model",
@@ -249,5 +253,8 @@
   "onboarding.practice.title": "Try It Out",
   "onboarding.practice.description": "Test your setup with a quick recording",
   "onboarding.done.title": "All Done",
-  "onboarding.done.description": "You're ready to start using AriaType"
+  "onboarding.done.description": "You're ready to start using AriaType",
+  "model.tabs.voice": "Voice Input",
+  "model.tabs.polish": "Polish",
+  "model.tabs.performance": "Performance"
 }

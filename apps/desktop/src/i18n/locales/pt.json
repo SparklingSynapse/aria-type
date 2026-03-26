@@ -249,5 +249,12 @@
   "onboarding.practice.title": "Experimente",
   "onboarding.practice.description": "Teste a função de gravação",
   "onboarding.done.title": "Pronto",
-  "onboarding.done.description": "AriaType está pronto"
+  "onboarding.done.description": "AriaType está pronto",
+  "hotkey.recording.modeTitle": "Modo de gravação",
+  "hotkey.recording.modeHold": "Segurar",
+  "hotkey.recording.modeToggle": "Alternar",
+  "hotkey.recording.modeDesc": "Segurar: pressione e segure para gravar, solte para parar. Alternar: pressione para iniciar, pressione novamente para parar.",
+  "model.tabs.voice": "Entrada de voz",
+  "model.tabs.polish": "Polimento",
+  "model.tabs.performance": "Desempenho"
 }

@@ -78,7 +78,7 @@ function PermissionNotice() {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="bg-card border border-border rounded-xl p-6 max-w-sm mx-4 shadow-lg">
+      <div className="bg-card border border-border rounded-xl p-8 max-w-sm mx-4 shadow-lg">
         <h3 className="text-lg font-semibold mb-2">{t("permission.title")}</h3>
         <p className="text-muted-foreground text-sm mb-4">
           {t("permission.description")}

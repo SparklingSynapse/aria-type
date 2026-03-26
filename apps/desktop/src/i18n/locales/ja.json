@@ -249,5 +249,12 @@
   "onboarding.practice.title": "試してみる",
   "onboarding.practice.description": "録音機能をテストしてください",
   "onboarding.done.title": "設定完了",
-  "onboarding.done.description": "AriaTypeの準備ができました"
+  "onboarding.done.description": "AriaTypeの準備ができました",
+  "hotkey.recording.modeTitle": "録音モード",
+  "hotkey.recording.modeHold": "長押し",
+  "hotkey.recording.modeToggle": "切り替え",
+  "hotkey.recording.modeDesc": "長押し：押している間録音、離すと停止。切り替え：一度押すと開始、もう一度押すと停止。",
+  "model.tabs.voice": "音声入力",
+  "model.tabs.polish": "テキスト整形",
+  "model.tabs.performance": "パフォーマンス"
 }

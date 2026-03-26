@@ -249,5 +249,12 @@
   "onboarding.practice.title": "Prova",
   "onboarding.practice.description": "Testa la funzione di registrazione",
   "onboarding.done.title": "Fatto",
-  "onboarding.done.description": "AriaType è pronto"
+  "onboarding.done.description": "AriaType è pronto",
+  "hotkey.recording.modeTitle": "Modalità di registrazione",
+  "hotkey.recording.modeHold": "Tenere premuto",
+  "hotkey.recording.modeToggle": "Alternare",
+  "hotkey.recording.modeDesc": "Tenere premuto: premi e tieni premuto per registrare, rilascia per fermare. Alternare: premi per iniziare, premi di nuovo per fermare.",
+  "model.tabs.voice": "Input vocale",
+  "model.tabs.polish": "Raffinamento",
+  "model.tabs.performance": "Prestazioni"
 }

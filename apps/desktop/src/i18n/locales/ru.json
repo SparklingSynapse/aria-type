@@ -249,5 +249,12 @@
   "onboarding.practice.title": "Попробуйте",
   "onboarding.practice.description": "Протестируйте функцию записи",
   "onboarding.done.title": "Готово",
-  "onboarding.done.description": "AriaType готов"
+  "onboarding.done.description": "AriaType готов",
+  "hotkey.recording.modeTitle": "Режим записи",
+  "hotkey.recording.modeHold": "Удержание",
+  "hotkey.recording.modeToggle": "Переключение",
+  "hotkey.recording.modeDesc": "Удержание: нажмите и удерживайте для записи, отпустите для остановки. Переключение: нажмите для начала, нажмите снова для остановки.",
+  "model.tabs.voice": "Голосовой ввод",
+  "model.tabs.polish": "Обработка текста",
+  "model.tabs.performance": "Производительность"
 }
