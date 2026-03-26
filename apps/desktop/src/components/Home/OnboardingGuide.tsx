@@ -1,8 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
-import logoLight from "../../../assets/ariatype-light.png";
-import logoDark from "../../../assets/ariatype-dark.png";
 import {
   ChevronRight,
   ChevronLeft,
@@ -16,6 +14,7 @@ import {
   Zap,
   Eye,
   Languages,
+  Star,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { analytics } from "@/lib/analytics";
@@ -25,7 +24,8 @@ import {
   modelCommands,
   events,
   audioCommands,
-  type ModelInfo,
+  windowCommands,
+  type RecommendedModel,
 } from "@/lib/tauri";
 import { useSettingsContext } from "@/contexts/SettingsContext";
 import { HotkeyInput, formatHotkey } from "@/components/ui/hotkey-input";
@@ -200,28 +200,86 @@ function PermissionStep() {
   );
 }
 
-function ModelStep() {
+function CircularProgress({ progress, size = 16, strokeWidth = 2 }: { progress: number; size?: number; strokeWidth?: number }) {
+  const radius = (size - strokeWidth) / 2;
+  const circumference = radius * 2 * Math.PI;
+  const offset = circumference - (progress / 100) * circumference;
+
+  return (
+    <svg width={size} height={size} className="text-green-500">
+      <circle
+        className="text-green-500/20"
+        strokeWidth={strokeWidth}
+        stroke="currentColor"
+        fill="transparent"
+        r={radius}
+        cx={size / 2}
+        cy={size / 2}
+      />
+      <circle
+        className="transition-all duration-300"
+        strokeWidth={strokeWidth}
+        strokeDasharray={circumference}
+        strokeDashoffset={offset}
+        strokeLinecap="round"
+        stroke="currentColor"
+        fill="transparent"
+        r={radius}
+        cx={size / 2}
+        cy={size / 2}
+        transform={`rotate(-90 ${size / 2} ${size / 2})`}
+      />
+    </svg>
+  );
+}
+
+function ModelStep({
+  language,
+  selectedModel,
+  onSelectModel,
+  onModelReadyChange,
+}: {
+  language: string;
+  selectedModel: string | null;
+  onSelectModel: (modelName: string) => void;
+  onModelReadyChange: (isReady: boolean) => void;
+}) {
   const { t } = useTranslation();
-  const [models, setModels] = useState<ModelInfo[]>([]);
-  const [downloading, setDownloading] = useState<string | null>(null);
-  const [progress, setProgress] = useState(0);
+  const [models, setModels] = useState<RecommendedModel[]>([]);
+  const [progressMap, setProgressMap] = useState<Record<string, number>>({});
+  const [autoDownloadStarted, setAutoDownloadStarted] = useState(false);
 
+  const DEFAULT_MODELS = ["base", "sense-voice-small-q4_k"];
+  const CJK_LANGUAGES = ["zh", "zh-TW", "yue", "ja", "ko"];
+
+  const getRecommendedModelName = (lang: string): string => {
+    if (lang && lang !== "auto" && CJK_LANGUAGES.some((l) => lang.startsWith(l))) {
+      return "sense-voice-small-q4_k";
+    }
+    return "base";
+  };
+
+  const recommendedModelName = getRecommendedModelName(language);
+
+  // Fetch recommendations when language changes
   useEffect(() => {
-    modelCommands.getModels().then(setModels).catch(console.error);
-  }, []);
+    modelCommands.recommendModelsByLanguage(language || "auto").then(setModels).catch(console.error);
+  }, [language]);
 
+  // Listen for download progress and completion
   useEffect(() => {
     let unlistenProgress: (() => void) | undefined;
     let unlistenComplete: (() => void) | undefined;
 
     const setup = async () => {
       unlistenProgress = await events.onModelDownloadProgress((data) => {
-        setProgress(data.progress);
+        setProgressMap((prev) => ({ ...prev, [data.model]: data.progress }));
       });
-      unlistenComplete = await events.onModelDownloadComplete(() => {
-        setDownloading(null);
-        setProgress(0);
-        modelCommands.getModels().then(setModels).catch(console.error);
+      unlistenComplete = await events.onModelDownloadComplete(async (modelName) => {
+        setProgressMap((prev) => ({ ...prev, [modelName]: 100 }));
+        modelCommands.recommendModelsByLanguage(language || "auto").then(setModels).catch(console.error);
+        const displayName = modelName === "base" ? "Whisper Base" : "SenseVoice Small Q4";
+        await windowCommands.showToast(`${displayName} download complete`);
       });
     };
     setup();
@@ -230,93 +288,99 @@ function ModelStep() {
       unlistenProgress?.();
       unlistenComplete?.();
     };
-  }, []);
+  }, [language]);
 
-  const handleDownload = async (modelName: string) => {
-    setDownloading(modelName);
-    setProgress(0);
-    try {
-      await modelCommands.downloadModel(modelName);
-    } catch (err) {
-      console.error("Failed to download model:", err);
-      setDownloading(null);
+  useEffect(() => {
+    if (autoDownloadStarted) return;
+    setAutoDownloadStarted(true);
+
+    const startDownloads = async () => {
+      for (const modelName of DEFAULT_MODELS) {
+        try {
+          const isDownloaded = await modelCommands.isModelDownloaded(modelName);
+          if (isDownloaded) {
+            setProgressMap((prev) => ({ ...prev, [modelName]: 100 }));
+          } else {
+            await modelCommands.downloadModel(modelName);
+          }
+        } catch (err) {
+          console.error(`Failed to start download for ${modelName}:`, err);
+        }
+      }
+      modelCommands.recommendModelsByLanguage(language || "auto").then(setModels).catch(console.error);
+    };
+
+    startDownloads();
+  }, [autoDownloadStarted, language]);
+
+  useEffect(() => {
+    if (!selectedModel && models.length > 0) {
+      onSelectModel(recommendedModelName);
     }
-  };
+  }, [models, selectedModel, onSelectModel, recommendedModelName]);
 
-  const downloadedModels = models.filter((m) => m.downloaded);
-  const recommendedModel = models.find((m) => m.name === "base") || models[0];
+  // Only allow next step when the currently selected model is downloaded
+  useEffect(() => {
+    if (selectedModel) {
+      const model = models.find((m) => m.model_name === selectedModel);
+      const progress = progressMap[selectedModel] || 0;
+      onModelReadyChange(!!model?.downloaded || progress === 100);
+    } else {
+      onModelReadyChange(false);
+    }
+  }, [selectedModel, models, progressMap, onModelReadyChange]);
 
-  if (downloadedModels.length > 0) {
-    return (
-      <div className="flex flex-col items-center gap-3 text-center">
-        <div className="w-12 h-12 rounded-full bg-green-500/20 flex items-center justify-center">
-          <Check className="w-10 h-10 text-green-500" />
-        </div>
-        <p className="mt-2 text-sm">
-          {t("onboarding.model.downloaded", {
-            model: downloadedModels[0].display_name,
-          })}
-        </p>
-      </div>
-    );
-  }
+  const recommendedModel = models.find((m) => m.model_name === recommendedModelName);
 
   return (
     <div className="space-y-3 w-full">
       <p className="text-sm text-muted-foreground text-center mb-2">
         {t("onboarding.model.selectHint")}
       </p>
-      {models.slice(0, 3).map((model) => {
-        const isRecommended = model.name === recommendedModel?.name;
+      {DEFAULT_MODELS.map((modelName) => {
+        const modelInfo = models.find((m) => m.model_name === modelName);
+        const isRecommended = recommendedModel?.model_name === modelName;
+        const isSelected = selectedModel === modelName;
+        const progress = progressMap[modelName] || 0;
+        const isDownloaded = modelInfo?.downloaded ?? false;
+
+        const displayName = modelName === "base" ? "Whisper Base (74M)" : "SenseVoice Small Q4 (244M)";
+        const accuracyScore = modelName === "base" ? 7 : 9;
+
         return (
           <div
-            key={model.name}
+            key={modelName}
             className={cn(
-              "flex items-center justify-between p-3 rounded-lg border bg-card",
-              isRecommended
-                ? "border-primary/50 bg-primary/5"
-                : "border-border",
+              "flex items-center justify-between p-3 rounded-lg border bg-card cursor-pointer transition-all",
+              isSelected
+                ? "border-primary/50 bg-primary/5 ring-2 ring-primary"
+                : isRecommended && isDownloaded
+                  ? "border-primary/50 bg-primary/5"
+                  : "border-border hover:bg-muted/50",
             )}
+            onClick={() => onSelectModel(modelName)}
           >
             <div className="flex items-center gap-3">
               <div>
                 <div className="flex items-center gap-2">
-                  <p className="text-sm font-medium">{model.display_name}</p>
+                  <p className="text-sm font-medium">{displayName}</p>
                   {isRecommended && (
-                    <div className="flex items-center gap-1 text-xs text-primary">
-                      <Check className="w-3 h-3" />
-                      <span>Recommended</span>
-                    </div>
+                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-semibold bg-amber-500/15 text-amber-600 dark:text-amber-400 rounded">
+                      <Star className="w-2.5 h-2.5 fill-current" />
+                      {t("onboarding.model.recommended")}
+                    </span>
                   )}
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  {model.size_mb}MB · {t("model.available.accuracy")}:{" "}
-                  {model.accuracy_score}/10
+                  {modelName === "base" ? "74MB" : "244MB"} · {t("model.available.accuracy")}: {accuracyScore}/10
                 </p>
               </div>
             </div>
-            {downloading === model.name ? (
-              <div className="flex items-center gap-2 w-24">
-                <div className="flex-1 h-1.5 bg-secondary rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-primary transition-all"
-                    style={{ width: `${progress}%` }}
-                  />
-                </div>
-                <span className="text-xs text-muted-foreground w-8">
-                  {progress}%
-                </span>
-              </div>
-            ) : (
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => handleDownload(model.name)}
-                disabled={downloading !== null}
-              >
-                {t("model.available.download")}
-              </Button>
-            )}
+            <div className="flex items-center">
+              {isDownloaded || progress === 100 ? null : (
+                <CircularProgress progress={progress} size={18} strokeWidth={2} />
+              )}
+            </div>
           </div>
         );
       })}
@@ -619,19 +683,16 @@ interface OnboardingGuideProps {
 
 export function OnboardingGuide({ isOpen, onClose }: OnboardingGuideProps) {
   const { t } = useTranslation();
-  const { settings } = useSettingsContext();
+  const { settings, updateSetting } = useSettingsContext();
   const [currentStep, setCurrentStep] = useState(0);
+  const [selectedModel, setSelectedModel] = useState<string | null>(null);
+  const [isModelReady, setIsModelReady] = useState(false);
 
   const steps: Step[] = [
     {
       id: "permissions",
       title: t("onboarding.permissions.title"),
       description: t("onboarding.permissions.description"),
-    },
-    {
-      id: "model",
-      title: t("onboarding.model.title"),
-      description: t("onboarding.model.description"),
     },
     {
       id: "language",
@@ -642,6 +703,11 @@ export function OnboardingGuide({ isOpen, onClose }: OnboardingGuideProps) {
       id: "hotkey",
       title: t("onboarding.hotkey.title"),
       description: t("onboarding.hotkey.description"),
+    },
+    {
+      id: "model",
+      title: t("onboarding.model.title"),
+      description: t("onboarding.model.description"),
     },
     {
       id: "practice",
@@ -655,13 +721,23 @@ export function OnboardingGuide({ isOpen, onClose }: OnboardingGuideProps) {
     },
   ];
 
-  const handleNext = () => {
+  const handleNext = async () => {
+    if (current.id === "model" && selectedModel) {
+      const engineType = selectedModel.includes("sense-voice") ? "sensevoice" : "whisper";
+      await updateSetting("model", selectedModel);
+      await updateSetting("stt_engine", engineType);
+    }
     if (currentStep < steps.length - 1) {
       setCurrentStep(currentStep + 1);
     } else {
       analytics.track(AnalyticsEvents.ONBOARDING_COMPLETED);
       onClose();
     }
+  };
+
+  const canProceed = () => {
+    if (current.id === "model") return !!selectedModel && isModelReady;
+    return true;
   };
 
   const handlePrev = () => {
@@ -700,12 +776,19 @@ export function OnboardingGuide({ isOpen, onClose }: OnboardingGuideProps) {
     switch (current.id) {
       case "permissions":
         return <PermissionStep />;
-      case "model":
-        return <ModelStep />;
       case "language":
         return <LanguageStep />;
       case "hotkey":
         return <HotkeyStep />;
+      case "model":
+        return (
+          <ModelStep
+            language={settings?.stt_engine_language || "auto"}
+            selectedModel={selectedModel}
+            onSelectModel={setSelectedModel}
+            onModelReadyChange={setIsModelReady}
+          />
+        );
       case "practice":
         return (
           <PracticeStep
@@ -728,8 +811,6 @@ export function OnboardingGuide({ isOpen, onClose }: OnboardingGuideProps) {
 
       <div className="relative z-10 w-[560px] min-h-[520px] mx-4 bg-background rounded-xl border border-border shadow-2xl overflow-hidden flex flex-col">
         <div className="flex flex-col items-center gap-3 pt-6 shrink-0">
-          <img src={logoLight} alt="AriaType" className="h-7 dark:hidden" />
-          <img src={logoDark} alt="AriaType" className="h-7 hidden dark:block" />
           <div className="flex justify-center gap-2">
             {steps.map((_, index) => (
             <button
@@ -786,7 +867,7 @@ export function OnboardingGuide({ isOpen, onClose }: OnboardingGuideProps) {
               {t("onboarding.skip")}
             </Button>
           )}
-          <Button size="sm" onClick={handleNext} className="gap-2">
+          <Button size="sm" onClick={handleNext} disabled={!canProceed()} className="gap-2">
             {isLastStep ? t("onboarding.finish") : t("onboarding.next")}
             {!isLastStep && <ChevronRight className="w-4 h-4" />}
           </Button>

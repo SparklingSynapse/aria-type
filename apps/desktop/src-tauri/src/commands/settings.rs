@@ -290,8 +290,13 @@ pub fn update_settings(
                 }
             }
             "cloud_polish" => {
-                if let Ok(v) = serde_json::from_value::<CloudProviderConfig>(value) {
-                    settings.cloud_polish = v;
+                match serde_json::from_value::<CloudProviderConfig>(value.clone()) {
+                    Ok(v) => {
+                        settings.cloud_polish = v;
+                    }
+                    Err(e) => {
+                        tracing::error!(error = %e, value = %value, "failed to parse cloud_polish config");
+                    }
                 }
             }
             _ => return Err(format!("Unknown setting key: {}", key)),

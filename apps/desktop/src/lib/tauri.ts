@@ -77,6 +77,16 @@ export interface PolishModelInfo {
   downloaded: boolean;
 }
 
+export interface RecommendedModel {
+  engine_type: string;
+  model_name: string;
+  display_name: string;
+  size_mb: number;
+  speed_score: number;
+  accuracy_score: number;
+  downloaded: boolean;
+}
+
 export const windowCommands = {
   showMain: () => invoke("show_main_window"),
   hideMain: () => invoke("hide_main_window"),
@@ -140,6 +150,8 @@ export const modelCommands = {
     invoke<void>("cancel_download", { modelName }),
   deleteModel: (modelName: string) =>
     invoke<void>("delete_model", { modelName }),
+  recommendModelsByLanguage: (language: string) =>
+    invoke<RecommendedModel[]>("recommend_models_by_language", { language }),
   getPolishModels: () =>
     invoke<PolishModelInfo[]>("get_polish_models"),
   getCurrentPolishModel: () =>

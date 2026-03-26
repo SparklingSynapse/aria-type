@@ -302,14 +302,14 @@ async fn run_transcription(app: AppHandle, audio_path: String, task_id: u64) {
     if !text.is_empty() {
         info!(task_id, chars = text.len(), "transcription complete");
 
-        let polish_enabled = {
+        let (polish_enabled, cloud_polish_enabled) = {
             let settings = state.settings.lock();
-            settings.polish_enabled
+            (settings.polish_enabled, settings.cloud_polish.enabled)
         };
 
         let _polish_start_time = std::time::Instant::now();
 
-        let final_text = if polish_enabled {
+        let final_text = if polish_enabled || cloud_polish_enabled {
             let (polish_system_prompt, polish_language, polish_model_id, cloud_polish_config) = {
                 let settings = state.settings.lock();
                 let prompt = settings.polish_system_prompt.clone();
@@ -322,39 +322,99 @@ async fn run_transcription(app: AppHandle, audio_path: String, task_id: u64) {
             };
 
             // Check if cloud polish is enabled
-            if cloud_polish_config.enabled && !cloud_polish_config.api_key.is_empty() && !cloud_polish_config.model.is_empty() {
-                debug!(task_id, provider = %cloud_polish_config.provider_type, model = %cloud_polish_config.model, "running cloud text polish");
+            if cloud_polish_config.enabled {
+                if cloud_polish_config.api_key.is_empty() || cloud_polish_config.model.is_empty() {
+                    warn!(
+                        task_id,
+                        provider = %cloud_polish_config.provider_type,
+                        api_key_empty = cloud_polish_config.api_key.is_empty(),
+                        model_empty = cloud_polish_config.model.is_empty(),
+                        "cloud polish is enabled but api_key or model is empty, falling back to local polish"
+                    );
+                    
+                    // Fall back to local polish engine
+                    match crate::polish_engine::UnifiedPolishManager::get_engine_by_model_id(&polish_model_id) {
+                        Some(engine_type) => {
+                            let model_filename = state.polish_manager.get_model_filename(
+                                engine_type,
+                                &polish_model_id
+                            );
 
-                let request = crate::polish_engine::PolishRequest::new(
-                    text.clone(),
-                    polish_system_prompt,
-                    polish_language,
-                );
+                            if model_filename.is_some() && state.polish_manager.is_model_downloaded(
+                                engine_type,
+                                &polish_model_id
+                            ) {
+                                info!(task_id, engine = ?engine_type, model_id = %polish_model_id, "running local text polish (fallback)");
 
-                match state.polish_manager.polish_cloud(
-                    request,
-                    &cloud_polish_config.provider_type,
-                    &cloud_polish_config.api_key,
-                    &cloud_polish_config.base_url,
-                    &cloud_polish_config.model,
-                    cloud_polish_config.enable_thinking,
-                ).await {
-                    Ok(result) if !result.text.is_empty() => {
-                        info!(task_id, polish_ms = result.total_ms, "cloud polish complete");
-                        metrics.polish_time_ms = result.total_ms;
-                        metrics.total_time_ms += metrics.polish_time_ms;
-                        result.text
+                                let request = crate::polish_engine::PolishRequest::new(
+                                    text.clone(),
+                                    polish_system_prompt,
+                                    polish_language,
+                                ).with_model(model_filename.unwrap());
+
+                                match state.polish_manager.polish(
+                                    engine_type,
+                                    request
+                                ).await {
+                                    Ok(result) if !result.text.is_empty() => {
+                                        info!(task_id, chars = result.text.len(), "local polish complete (fallback)");
+                                        metrics.polish_time_ms = result.total_ms;
+                                        metrics.total_time_ms += metrics.polish_time_ms;
+                                        result.text
+                                    }
+                                    Ok(_) => {
+                                        warn!(task_id, "local polish returned empty result, using raw transcription");
+                                        text
+                                    }
+                                    Err(e) => {
+                                        warn!(task_id, error = %e, "local polish failed, using raw transcription");
+                                        text
+                                    }
+                                }
+                            } else {
+                                warn!(task_id, "local polish model not downloaded, using raw transcription");
+                                text
+                            }
+                        }
+                        None => {
+                            warn!(task_id, model_id = %polish_model_id, "unknown local polish model, cannot determine engine");
+                            text
+                        }
                     }
-                    Ok(_) => {
-                        warn!(task_id, provider = %cloud_polish_config.provider_type, "cloud polish returned empty result, using raw transcription");
-                        text
-                    }
-                    Err(e) => {
-                        warn!(task_id, provider = %cloud_polish_config.provider_type, error = %e, "cloud polish failed, using raw transcription");
-                        text
+                } else {
+                    info!(task_id, provider = %cloud_polish_config.provider_type, model = %cloud_polish_config.model, "running cloud text polish");
+
+                    let request = crate::polish_engine::PolishRequest::new(
+                        text.clone(),
+                        polish_system_prompt,
+                        polish_language,
+                    );
+
+                    match state.polish_manager.polish_cloud(
+                        request,
+                        &cloud_polish_config.provider_type,
+                        &cloud_polish_config.api_key,
+                        &cloud_polish_config.base_url,
+                        &cloud_polish_config.model,
+                        cloud_polish_config.enable_thinking,
+                    ).await {
+                        Ok(result) if !result.text.is_empty() => {
+                            info!(task_id, chars = result.text.len(), polish_ms = result.total_ms, "cloud polish complete");
+                            metrics.polish_time_ms = result.total_ms;
+                            metrics.total_time_ms += metrics.polish_time_ms;
+                            result.text
+                        }
+                        Ok(_) => {
+                            warn!(task_id, provider = %cloud_polish_config.provider_type, "cloud polish returned empty result, using raw transcription");
+                            text
+                        }
+                        Err(e) => {
+                            warn!(task_id, provider = %cloud_polish_config.provider_type, error = %e, "cloud polish failed, using raw transcription");
+                            text
+                        }
                     }
                 }
-            } else {
+            } else if polish_enabled {
                 // Use local polish engine
                 match crate::polish_engine::UnifiedPolishManager::get_engine_by_model_id(&polish_model_id) {
                     Some(engine_type) => {
@@ -367,7 +427,7 @@ async fn run_transcription(app: AppHandle, audio_path: String, task_id: u64) {
                             engine_type,
                             &polish_model_id
                         ) {
-                            debug!(task_id, engine = ?engine_type, model_id = %polish_model_id, "running text polish");
+                            info!(task_id, engine = ?engine_type, model_id = %polish_model_id, "running local text polish");
 
                             let request = crate::polish_engine::PolishRequest::new(
                                 text.clone(),
@@ -380,30 +440,32 @@ async fn run_transcription(app: AppHandle, audio_path: String, task_id: u64) {
                                 request
                             ).await {
                                 Ok(result) if !result.text.is_empty() => {
-                                    debug!(task_id, chars = result.text.len(), "polish complete");
+                                    info!(task_id, chars = result.text.len(), polish_ms = result.total_ms, "local polish complete");
                                     metrics.polish_time_ms = result.total_ms;
                                     metrics.total_time_ms += metrics.polish_time_ms;
                                     result.text
                                 }
                                 Ok(_) => {
-                                    warn!(task_id, "polish returned empty result, using raw transcription");
+                                    warn!(task_id, "local polish returned empty result, using raw transcription");
                                     text
                                 }
                                 Err(e) => {
-                                    warn!(task_id, error = %e, "polish failed, using raw transcription");
+                                    warn!(task_id, error = %e, "local polish failed, using raw transcription");
                                     text
                                 }
                             }
                         } else {
-                            warn!(task_id, "polish model not downloaded, using raw transcription");
+                            warn!(task_id, "local polish model not downloaded, using raw transcription");
                             text
                         }
                     }
                     None => {
-                        warn!(task_id, model_id = %polish_model_id, "unknown polish model, cannot determine engine");
+                        warn!(task_id, model_id = %polish_model_id, "unknown local polish model, cannot determine engine");
                         text
                     }
                 }
+            } else {
+                text
             }
         } else {
             text
